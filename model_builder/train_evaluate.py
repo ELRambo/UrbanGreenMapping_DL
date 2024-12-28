@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from sklearn.metrics import f1_score, precision_score, recall_score
+from tqdm import tqdm
 
 def evaluate_model(model, data_loader, criterion, device):
     model.eval()
@@ -81,7 +82,9 @@ def train_model(dataset_train, batch_size=8, num_epochs=50, learning_rate=0.001,
         model.train()
         running_loss = 0.0
         
-        for batch_features, batch_labels in train_loader:
+        batch_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}", leave=False)
+        
+        for batch_features, batch_labels in batch_pbar:
             batch_features = batch_features.to(device)
             batch_labels = batch_labels.to(device)
             
@@ -92,6 +95,7 @@ def train_model(dataset_train, batch_size=8, num_epochs=50, learning_rate=0.001,
             optimizer.step()
             
             running_loss += loss.item()
+            batch_pbar.set_postfix({'loss': f'{loss.item():.4f}'})
         
         train_loss = running_loss / len(train_loader)
         
