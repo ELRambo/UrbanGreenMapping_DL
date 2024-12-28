@@ -39,7 +39,7 @@ def get_bounding_box(city_name):
     else:
         return "No results found"
     
-# In[]
+# In[get bounding box from a list of cities]
 
 res = pd.DataFrame(columns=["city", "bbox"])
 
@@ -120,6 +120,6 @@ for zone in zones:
     
 res.to_csv("D:/Msc/Thesis/Data/cityBbox.csv")
 
-# In[]
+# In[get bounding box of a single city]
 
 print(get_bounding_box("Lagos"))
