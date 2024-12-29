@@ -1,0 +1,5 @@
+Tropical cities: https://code.earthengine.google.com/71a24cad80c031112657e47bcc692b4f
+Arid cities: https://code.earthengine.google.com/6423f1d258a37979fc7838a6e3de23b5
+Temperate cities: https://code.earthengine.google.com/f5c61f6a881cdc537ed4da8756894d00
+Continental cities: https://code.earthengine.google.com/7de792ba76e6963331ab99390359db74
+Polar cities: https://code.earthengine.google.com/f7942fc3644d75b02330122a1a7e78fb
