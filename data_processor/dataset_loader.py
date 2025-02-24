@@ -12,9 +12,13 @@ import glob
 import torch
 from torch.utils.data import Dataset
 
-class GeospatialDataset(Dataset):
+class GeospatialDatasetTorch(Dataset):
     def __init__(self, data):
         """
+        Return torch dataset
+        
+        Parameters:
+        -----------
         data: numpy array of shape (n_samples, height, width, channels)
         """
         self.data = torch.FloatTensor(data)
@@ -49,7 +53,9 @@ class GeospatialDataLoader:
         self.combined_dataset = None
         
     def load_datasets(self, verbose=True):
+        
         """Load and concatenate all valid datasets"""
+        
         file_paths = glob.glob(os.path.join(self.data_dir, self.pattern))
         
         if len(file_paths) == 0:
@@ -66,7 +72,7 @@ class GeospatialDataLoader:
             if verbose:
                 print(f"Loading {filename}...", end=" ")
             
-            data = np.load(file_path)
+            data = np.load(file_path, mmap_mode='r+')
             
             # Validate shape
             if self.required_shape and data.shape[1:] != self.required_shape:
@@ -95,23 +101,30 @@ class GeospatialDataLoader:
             print(f"\nCombined dataset shape: {self.combined_dataset.shape}")
             print(f"Total samples: {total_samples}")
             print(f"Memory usage: {self.combined_dataset.nbytes / (1024**3):.2f} GB")
+            print("")
         
         return self.combined_dataset
     
     def get_dataset(self):
+        
         """Return the combined dataset"""
+        
         if self.combined_dataset is None:
             self.load_datasets()
         return self.combined_dataset
     
     def get_torch_dataset(self):
+        
         """Return a PyTorch Dataset object"""
+        
         if self.combined_dataset is None:
             self.load_datasets()
-        return GeospatialDataset(self.combined_dataset)
+        return GeospatialDatasetTorch(self.combined_dataset)
     
     def get_data_stats(self):
+        
         """Return basic statistics about the dataset"""
+        
         if self.combined_dataset is None:
             self.load_datasets()
             

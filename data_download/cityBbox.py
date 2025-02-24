@@ -8,7 +8,9 @@ Created on Thu Dec 12 16:59:34 2024
 import requests
 import pandas as pd
 
-api_key = "AIzaSyCxLoWKBcCKanELXBDQRX6fsE9THmzPGOY"
+f = open("D:/Msc/Thesis/Data/GEEDownload/api.txt", 'r')
+api_key = f.readline()
+f.close()
 
 def get_bounding_box(city_name):
     base_url = "https://maps.googleapis.com/maps/api/geocode/json"
@@ -33,93 +35,133 @@ def get_bounding_box(city_name):
             log = []
             log.append(city_name)
             log.append(f"var geometry = ee.Geometry.Rectangle({bounding_box});")
+            log.append(f"ee.Geometry.Rectangle({bounding_box})")
             return log
         else:
             return "Bounding box not available"
     else:
         return "No results found"
-    
-# In[get bounding box from a list of cities]
 
-res = pd.DataFrame(columns=["city", "bbox"])
+# In[]
 
 tropical_cities = [
-    "Bangkok, Thailand",
     "Singapore, Singapore",
-    "Medellín, Colombia",  # Replaced Kuala Lumpur
-    "Jakarta, Indonesia",
-    "Hanoi, Vietnam",
-    "Manila Metropolitan, Philippines",
-    "Ho Chi Minh City, Vietnam",
-    "Dar es Salaam, Tanzania",
-    "Rio de Janeiro, Brazil",
-    "Mumbai, India"
+    "Medellin, Colombia",
+    "Santo Domingo, Dominican Republic",
+    "Jayapura, Indonesia",
+    "Kinshasa, DRC",
+    "Vientiane, Laos",
+    "Belmopan, Belize",
+    "Port Louis, Mauritius",
+    "Miami, United States",
+    "Maceio, Brazil",
+    "Mangalore, India",
+    "Monrovia, Liberia",
+    "Cape Coast, Ghana",
+    "Fortaleza, Brazil",
+    "Mombasa, Kenya",
 ]
 
 arid_cities = [
-    "Dubai, United Arab Emirates",
+    "Tucson, United States",
     "Cairo, Egypt",
-    "Riyadh, Saudi Arabia",
-    "Las Vegas, USA",
-    "Lima, Peru",
+    "Alice Springs, Australia",
+    "Dubai, United Arab Emirates",  # custom
+    "San Pedro de Atacama, Chile",
+    "Yinchuan, China",
+    "Isfahan, Iran",
+    "Madrid, Spain",
+    "Denver, United States",
     "Cochabamba, Bolivia",
-    "Tucson, USA",
-    "Amman, Jordan",
-    "Baghdad, Iraq",
-    "Algiers, Algeria"
+    "Marrakesh, Morocco",
+    "Alexandria, Egypt",
+    "Bulawayo, Zimbabwe",
+    "Luanda, Angola",
+    "Niamey, Niger",
 ]
 
 temperate_cities = [
-    "San Francisco, USA",
-    "London, United Kingdom",
-    "Tokyo, Japan",
-    "Paris, France",
-    "Seoul, South Korea",
-    "Berlin, Germany",
-    "New York City, USA",
+    "Istanbul, Turkey",
+    "Algiers, Algeria",
+    "San Francisco, United States",
+    "Victoria, Canada",
     "Sydney, Australia",
-    "Toronto, Canada",
-    "Buenos Aires, Argentina"
+    "Buenos Aires, Argentina",
+    "Sendai, Japan",
+    "Munich, Germany",
+    "Paris, France",
+    "Ljubljana, Slovenia",
+    "Guangzhou, China",
+    "Lusaka, Zambia",
+    "Salta, Argentina",
+    "Shimla, India",
+    "Potosi, Bolivia",
 ]
 
 continental_cities = [
+    "Chicago, United States",
+    "Kiev, Ukraine",
+    "Minneapolis, United States",
+    "Beijing, China",
+    "Harbin, China",
+    "Arak, Iran",
+    "Bishkek, Kyrgyzstan",
     "Moscow, Russia",
-    "Chicago, USA",
     "Ottawa, Canada",
     "Warsaw, Poland",
-    "Astana (Nur-Sultan), Kazakhstan",
-    "Beijing, China",
-    "Almaty, Kazakhstan",
-    "Ulaanbaatar, Mongolia",
-    "Kiev, Ukraine",
-    "Minneapolis, USA"
+    "Astana, Kazakhstan",
+    "Stockholm, Sweden",
+    "Irkutsk, Russia",
+    "Calgary, Canada",
+    "Sivas, Turkey",
 ]
 
 polar_cities = [
     "Reykjavik, Iceland",
-    "Tromsø, Norway",
-    "Barrow (Utqiaġvik), USA",
+    "Tromso, Norway",
     "Anchorage, USA",
     "Murmansk, Russia",
     "Fairbanks, USA",
-    "Svalbard, Norway",
     "Yellowknife, Canada",
-    "Longyearbyen, Svalbard (Norway)",
-    "Iqaluit, Canada"
+    "Iqaluit, Canada",
+    "Qaanaaq, Greenland",
+    "Tasiilaq, Greenland",
+    "Norilsk, Russia",  # custom
+    "Upernavik, Greenland",
+    "Yakutsk, Russia",
+    "Hammerfest",
+    "Tiksi, Russia",
+    "Churchill, Canada"
 ]
+
+res = pd.DataFrame(columns=["city", "bbox_js", "bbox_py"])
 
 zones = [tropical_cities,arid_cities,temperate_cities,continental_cities,polar_cities]
 climate = ["tropical", "arid", "temperate", "continental", "polar"]
 count = 0
 for zone in zones:
-    res.loc[len(res)] = [climate[count], ""]
+    res.loc[len(res)] = [climate[count], "", ""]
     count += 1
     for city in zone: 
         bounding_box = get_bounding_box(city)
         res.loc[len(res)] = bounding_box
     
-res.to_csv("D:/Msc/Thesis/Data/cityBbox.csv")
+res.to_csv("D:/Msc/Thesis/Data/GEEDownload/cityBbox.csv")
+
+# In[pass geometry to threshold file]
+
+df = pd.read_csv("D:/Msc/Thesis/Data/GEEDownload/thresholds.csv")
+res['city'] = res['city'].str.split(',').str[0]
+city_to_bbox = dict(zip(res['city'], res['bbox_py']))
+def map_bbox_to_geometry(city):
+    return city_to_bbox.get(city, None)  # Default to None if no match is found
+
+# Apply the function to the 'geometry' column in df (thresholds.csv)
+df['geometry'] = df['city'].apply(map_bbox_to_geometry)
+
+# Save the updated df dataframe to a new CSV (optional)
+df.to_csv('D:/Msc/Thesis/Data/GEEDownload/updated_thresholds.csv', index=False)
 
 # In[get bounding box of a single city]
 
-print(get_bounding_box("Lagos"))
+print(get_bounding_box("Bangkok"))
