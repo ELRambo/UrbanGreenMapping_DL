@@ -7,6 +7,7 @@ Created on Fri Dec 20 13:10:19 2024
 
 import os
 import numpy as np
+import pandas as pd
 import rasterio
 
 os.chdir('D:/Msc/Thesis/Data/GEEDownload')
@@ -19,8 +20,8 @@ def readTiff(file_path):
 def normalize(x):
     return 255 * (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
 
-def gen_data(path, folder, file, nChannels=5):
-    file_path = os.path.join(path, folder, file)
+def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
+    
     arr = readTiff(file_path)
     _, rows, cols = arr.shape
 
@@ -45,7 +46,6 @@ def gen_data(path, folder, file, nChannels=5):
     # pad img
     new_rows = ((rows + sample_size - 1) // sample_size) * sample_size
     new_cols = ((cols + sample_size - 1) // sample_size) * sample_size
-    
     if new_rows != rows or new_cols != cols:
         pad_rows = new_rows - rows
         pad_cols = new_cols - cols
@@ -55,14 +55,24 @@ def gen_data(path, folder, file, nChannels=5):
     c = new_cols // sample_size
     
     print(data_output.shape, r, c)
+    
+    overlap = 0.2
+    step_size = int(sample_size * (1 - overlap))
         
-    # slice img for training (no overlap)
-    if folder == 'train':
+    # slice img for training
+    if isEval != 1:       
+        
+        # No overlap for train data
+        step_size = sample_size
         dataset_train_list = []
-        for i in range(r):
-            for j in range(c):
-                sample = data_output[i * sample_size : (i + 1) * sample_size, 
-                                     j * sample_size : (j + 1) * sample_size, :]
+        
+        num_tiles_rows = (data_output.shape[0] - sample_size) // step_size + 1
+        num_tiles_cols = (data_output.shape[1] - sample_size) // step_size + 1
+                
+        for i in range(num_tiles_rows):
+            for j in range(num_tiles_cols):
+                sample = data_output[i * step_size : i * step_size + sample_size, 
+                                     j * step_size : j * step_size + sample_size, :]
                 if np.count_nonzero(sample.flatten()) == 0:
                     print('discard empty sample')
                 else:
@@ -70,16 +80,23 @@ def gen_data(path, folder, file, nChannels=5):
         del data_output
         
         dataset_train = np.stack(dataset_train_list, axis=0)
-        np.save(os.path.join(path, folder, f"{file[:-4]}.npy"), dataset_train)
-    
-    # slice img for eval (overlap)
-    elif folder == 'eval':
-        overlap = 0.2
-        dataset_eval_list = []
-        step_size = int(sample_size * (1 - overlap))  # 204
+        np.save(os.path.join(zone_folder, 'train', f'{city}.npy'), dataset_train)
         
-        for i in range(r):
-            for j in range(c):
+        return len(dataset_train)
+    
+    # slice img for eval
+    else:
+        
+        if zone_folder == 'Temperate' or zone_folder == 'Continental':
+            step_size = sample_size
+        
+        dataset_eval_list = []
+        
+        num_tiles_rows = (data_output.shape[0] - sample_size) // step_size + 1
+        num_tiles_cols = (data_output.shape[1] - sample_size) // step_size + 1
+                
+        for i in range(num_tiles_rows):
+            for j in range(num_tiles_cols):
                 sample = data_output[i * step_size : i * step_size + sample_size, 
                                      j * step_size : j * step_size + sample_size, :]
                 if np.count_nonzero(sample.flatten()) == 0:
@@ -87,19 +104,35 @@ def gen_data(path, folder, file, nChannels=5):
                 else:
                     dataset_eval_list.append(sample)
         del data_output
-        
+                
         dataset_eval = np.stack(dataset_eval_list, axis=0)
-        np.save(os.path.join(path, folder, f"{file[:-4]}.npy"), dataset_eval)
-
+        np.save(os.path.join(zone_folder, 'eval', f'{city}.npy'), dataset_eval)
+        
+        return len(dataset_eval)
+    
     
 if __name__ == '__main__':
     
     nChannels = 5
-    path = 'Polar/'
-    folders = ['train', 'eval']
+    zone_folder = 'Arid'; zone = 'b'
     
-    for folder in folders:
-        for file in os.listdir(path + folder):
-            if file.endswith('tif'):
-                print(file)
-                gen_data(path, folder, file, nChannels)
+    df = pd.read_csv('newThresh.csv')
+    df = df[(df['zone'] == zone)]
+    
+    train_size = 0; eval_size = 0
+    
+    for index, row in df.iterrows():
+        
+        city = row['city']
+        isEval = row['isEval']
+        print(city)
+        
+        file = city + '.tif'
+        file_path = os.path.join('E:/Thesis', zone_folder, file)
+        
+        if isEval != 1:
+            train_size += gen_data(zone_folder, file_path, city, isEval, nChannels)
+        else:
+            eval_size += gen_data(zone_folder, file_path, city, isEval, nChannels)
+        
+    print(f'Train size: {train_size}, eval size: {eval_size}')

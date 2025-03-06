@@ -8,9 +8,9 @@ Created on Sat Dec 28 21:22:47 2024
 # unet.py
 import torch.nn as nn
 
-class SpectralUNet(nn.Module):
+class UNet(nn.Module):
     def __init__(self):
-        super(SpectralUNet, self).__init__()
+        super(UNet, self).__init__()
         
         # Encoder
         self.enc1 = self._make_layer(4, 64)

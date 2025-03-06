@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 Created on Thu Dec 12 13:52:43 2024
 
 @author: JingyiZhang
-"""
+'''
 
 import ee
 import pandas as pd
@@ -23,7 +23,7 @@ def getNDVI(image):
 
 def splitRec(geometry):
     
-    """ Split a rectangle into 4 tiles """
+    ''' Split a rectangle into 4 tiles '''
     
     coordinates = geometry.bounds().getInfo()['coordinates'][0]
     min_x = min([coord[0] for coord in coordinates])
@@ -45,7 +45,7 @@ def splitRec(geometry):
 
 def createMask(chunk):
     
-    """ Generate mask for each building chunk """
+    ''' Generate mask for each building chunk '''
     
     chunk = ee.FeatureCollection(chunk)
     mask = chunk.reduceToImage(
@@ -60,17 +60,17 @@ def createMask(chunk):
 
 def maskBuildings(country, geometry):
     
-    """ Mask building areas """
+    ''' Mask building areas '''
     
     # Remove incorrect features in the building collection
     def isGlobalExtent(feature):
         bounds = feature.geometry().bounds()
         firstCoordinate = ee.List(bounds.coordinates().get(0))
         minLon = ee.List(firstCoordinate.get(0)).get(0)
-        return ee.String(minLon).equals("-Infinity")
+        return ee.String(minLon).equals('-Infinity')
     
     buildings = ee.FeatureCollection( \
-        "projects/sat-io/open-datasets/VIDA_COMBINED/" + country) \
+        'projects/sat-io/open-datasets/VIDA_COMBINED/' + country) \
         .filterBounds(geometry) \
         .map(lambda feature: feature.set('isGlobal', isGlobalExtent(feature))) \
         .filter(ee.Filter.eq('isGlobal', False))
@@ -100,18 +100,18 @@ def maskBuildings(country, geometry):
     return ee.ImageCollection(indices.map(process_chunk)).min().unmask(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     
-    """ Execute the export process """
+    ''' Execute the export process '''
     
     # Authenticate and initialize Earth Engine
     ee.Authenticate()
     ee.Initialize()
     print('ee initialised')
     
-    df = pd.read_csv("D:/Msc/Thesis/Data/GEEDownload/newThresh.csv")
-    zone = 'a'
-    df = df[(df['zone'] == zone) & (df['exception'] == 'xl')]
+    df = pd.read_csv('D:/Msc/Thesis/Data/GEEDownload/newThresh.csv')
+    zone = 'e'
+    df = df[(df['zone'] == zone) & (df['exception'] == 2)]
     folder = zone
     scale = 10
     
@@ -156,7 +156,7 @@ if __name__ == "__main__":
             fileFormat='GeoTIFF',
             formatOptions={'cloudOptimized': True}
         )
-        print(f"{description} export starts")
+        print(f'{description} export starts')
         task.start()
         
     print('Check https://code.earthengine.google.com/tasks for progress.')
