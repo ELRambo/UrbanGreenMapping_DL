@@ -15,16 +15,16 @@ from tkinter import messagebox
 import winsound
 
 def main():
-    zone = 'Tropical'
+    zone = 'a'
     sample_size = 256
     train_data_loader = GeospatialDataLoader(
         data_dir=f'D:/Msc/Thesis/Data/GEEDownload/{zone}/train',
-        required_shape=(sample_size, sample_size, 5),
+        required_shape=(sample_size, sample_size, 6),
         dataset_type = 'train'
     )
     eval_data_loader = GeospatialDataLoader(
         data_dir=f'D:/Msc/Thesis/Data/GEEDownload/{zone}/eval',
-        required_shape=(sample_size, sample_size, 5),
+        required_shape=(sample_size, sample_size, 6),
         dataset_type='eval'
     )
     dataset_train = train_data_loader.get_torch_dataset()
@@ -33,9 +33,9 @@ def main():
     model, final_metrics, epochs, loss_values = train_model(
         dataset_train=dataset_train,
         dataset_eval=dataset_eval,
-        batch_size=8,
+        batch_size=16,
         num_epochs=100,
-        learning_rate=0.0001,
+        learning_rate=0.001,
         # alpha=0.8,
         # decision_thresh = dataset_train.calculate_green_percentages()
     )

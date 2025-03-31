@@ -5,7 +5,7 @@ Created on Sat Dec 28 21:30:22 2024
 @author: 10449
 '''
 
-from model_builder.resnet_attunet import ResNet34AttUNet, ResNet34ChannelAttUNet
+from model_builder.resnet_attunet import ResNet34SpatialAttUNet, ResNet34ChannelAttUNet
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import PolynomialLR
@@ -23,7 +23,7 @@ def evaluate_model(model, data_loader, criterion, device, decision_thresh):
     
     with torch.no_grad():
         for features, labels in data_loader:
-            # features: (batch_size, 4, height, width)
+            # features: (batch_size, channels, height, width)
             # labels after unsqueezing: (batch_size, 1, height, width)
             features = features.to(device)
             labels = labels.unsqueeze(1).to(device)  # add #channels for Dice loss and metrics calculations
@@ -90,7 +90,7 @@ def train_model(dataset_train, dataset_eval, batch_size=8, num_epochs=100,
     del dataset_train, dataset_eval
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = ResNet34AttUNet().to(device)
+    model = ResNet34SpatialAttUNet().to(device)
     criterion = FocalLoss(reduction='mean', alpha=alpha, gamma=2)
     # criterion = TverskyLoss(sigmoid=True, alpha=0.6, beta=0.4)
     # criterion = DiceFocalLoss(sigmoid=True, lambda_dice=0.3, lambda_focal=0.7, 

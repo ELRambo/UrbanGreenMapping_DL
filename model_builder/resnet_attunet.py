@@ -118,14 +118,15 @@ class ResNet34Encoder(nn.Module):
     def __init__(self, pretrained=True):
         super().__init__()
         resnet = resnet34(weights=ResNet34_Weights.DEFAULT if pretrained else None)
+        nChannels = 4
         
-        # Modify first convolution for 4 channels
-        self.initial_conv = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        # Modify first convolution for channels
+        self.initial_conv = nn.Conv2d(nChannels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         
         if pretrained:
             with torch.no_grad():
                 new_weight = resnet.conv1.weight.data.mean(dim=1, keepdim=True)
-                new_weight = new_weight.repeat(1, 4, 1, 1) * 0.75
+                new_weight = new_weight.repeat(1, nChannels, 1, 1) * 3 / nChannels
                 self.initial_conv.weight.data = new_weight
 
         self.initial = nn.Sequential(
@@ -263,7 +264,7 @@ class ResNet50AttUNet(nn.Module):
         out = self.final_up(d2)
         return out
     
-class ResNet34AttUNet(nn.Module):
+class ResNet34SpatialAttUNet(nn.Module):
     def __init__(self, pretrained=True):
         super().__init__()
         

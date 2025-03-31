@@ -20,7 +20,7 @@ def readTiff(file_path):
 def normalize(x):
     return 255 * (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
 
-def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
+def gen_data(zone, file_path, city, isEval, nChannels=6):
     
     arr = readTiff(file_path)
     _, rows, cols = arr.shape
@@ -35,11 +35,11 @@ def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
     # store bands and label
     data_output = np.zeros((arr.shape[0], arr.shape[1], nChannels))
     
-    # normalise spectral bands, 0-B4,B3,B2,B8-3
+    # normalise spectral bands, 0-B4,B3,B2,B8,B12-4
     for i in range(nChannels - 1):
         data_output[:, :, i] = np.nan_to_num(normalize(arr[:, :, i]))
-    # add label-4
-    data_output[:, :, 4] = arr[:, :, 4]
+    # add label-5
+    data_output[:, :, 5] = arr[:, :, 5]
     
     sample_size = 256
     
@@ -63,7 +63,8 @@ def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
     if isEval != 1:       
         
         # No overlap for train data
-        step_size = sample_size
+        if zone not in ['a', 'e']:
+            step_size = sample_size
         dataset_train_list = []
         
         num_tiles_rows = (data_output.shape[0] - sample_size) // step_size + 1
@@ -80,14 +81,14 @@ def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
         del data_output
         
         dataset_train = np.stack(dataset_train_list, axis=0)
-        np.save(os.path.join(zone_folder, 'train', f'{city}.npy'), dataset_train)
+        np.save(os.path.join(zone, 'train', f'{city}.npy'), dataset_train)
         
         return len(dataset_train)
     
     # slice img for eval
     else:
         
-        if zone_folder == 'Temperate' or zone_folder == 'Continental':
+        if zone in ['c', 'd']:
             step_size = sample_size
         
         dataset_eval_list = []
@@ -106,15 +107,15 @@ def gen_data(zone_folder, file_path, city, isEval, nChannels=5):
         del data_output
                 
         dataset_eval = np.stack(dataset_eval_list, axis=0)
-        np.save(os.path.join(zone_folder, 'eval', f'{city}.npy'), dataset_eval)
+        np.save(os.path.join(zone, 'eval', f'{city}.npy'), dataset_eval)
         
         return len(dataset_eval)
     
     
 if __name__ == '__main__':
     
-    nChannels = 5
-    zone_folder = 'Arid'; zone = 'b'
+    nChannels = 6
+    zone = 'a'
     
     df = pd.read_csv('newThresh.csv')
     df = df[(df['zone'] == zone)]
@@ -128,11 +129,11 @@ if __name__ == '__main__':
         print(city)
         
         file = city + '.tif'
-        file_path = os.path.join('E:/Thesis', zone_folder, file)
+        file_path = os.path.join('E:/Thesis', zone, file)
         
         if isEval != 1:
-            train_size += gen_data(zone_folder, file_path, city, isEval, nChannels)
+            train_size += gen_data(zone, file_path, city, isEval, nChannels)
         else:
-            eval_size += gen_data(zone_folder, file_path, city, isEval, nChannels)
+            eval_size += gen_data(zone, file_path, city, isEval, nChannels)
         
     print(f'Train size: {train_size}, eval size: {eval_size}')

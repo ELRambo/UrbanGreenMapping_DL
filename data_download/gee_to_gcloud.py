@@ -2,11 +2,12 @@
 '''
 Created on Thu Dec 12 13:52:43 2024
 
-@author: JingyiZhang
+@author: 10449
 '''
 
 import ee
 import pandas as pd
+from pansharpening import panSharpen
 
 def maskS2clouds(image):
     qa = image.select('QA60')
@@ -110,9 +111,8 @@ if __name__ == '__main__':
     print('ee initialised')
     
     df = pd.read_csv('D:/Msc/Thesis/Data/GEEDownload/newThresh.csv')
-    zone = 'e'
+    zone = 'b'
     df = df[(df['zone'] == zone) & (df['exception'] == 2)]
-    folder = zone
     scale = 10
     
     # Loop through each city
@@ -129,7 +129,14 @@ if __name__ == '__main__':
             .map(lambda image: image.clip(geometry)) \
             .median()
             
-        spectralBands = dataset.select(['B4', 'B3', 'B2', 'B8'])
+        sharpened = panSharpen({
+            'image': dataset,
+            'geometry': geometry,
+            'best_effort': True
+        })
+            
+        spectralBands = sharpened.select(['B4', 'B3', 'B2', 'B8', 'B12'])
+        
         ndvi = getNDVI(dataset).rename('NDVI')
         ndviLabel = ndvi.gt(thresh).rename('NDVI_Label')
         
@@ -142,13 +149,13 @@ if __name__ == '__main__':
             buildingMask = maskBuildings(country, tile_geometry).clip(geometry)
             ndviLabel = ndviLabel.updateMask(buildingMask)
         
-        ndviLabel =   ndviLabel.unmask(0).clip(geometry)                    
+        ndviLabel =   ndviLabel.unmask(0).clip(geometry)
         image = spectralBands.addBands(ndviLabel.toFloat())
             
         task = ee.batch.Export.image.toDrive(
             image=image,
             description=description,
-            folder=folder,
+            folder=zone,
             fileNamePrefix=description,
             region=geometry,
             scale=scale,

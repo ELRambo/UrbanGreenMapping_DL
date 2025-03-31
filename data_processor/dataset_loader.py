@@ -25,9 +25,9 @@ class GeospatialDatasetTorch(Dataset):
         '''
         self.data = torch.FloatTensor(data)
         
-        # Separate features (bands 0-3) from labels (band 4)
+        # Separate features (bands 0-4) from labels (band 5)
         self.features = self.data[..., :4]
-        self.labels = self.data[..., 4]
+        self.labels = self.data[..., 5]
         self.is_training = is_training
         
     def __len__(self):
@@ -72,7 +72,7 @@ class GeospatialDatasetTorch(Dataset):
         return green_percentage
 
 class GeospatialDataLoader:
-    def __init__(self, data_dir, pattern='*.npy', required_shape=(256, 256, 5), 
+    def __init__(self, data_dir, pattern='*.npy', required_shape=(256, 256, 6), 
                  memmap_file='', dataset_type=''):
         '''
         Initialize the GeospatialDataLoader
