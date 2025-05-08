@@ -2,7 +2,7 @@
 '''
 Created on Thu Dec 12 16:59:34 2024
 
-@author: JingyiZhang
+@author: 10449
 '''
 
 import requests
@@ -12,7 +12,7 @@ f = open('D:/Msc/Thesis/Data/GEEDownload/api.txt', 'r')
 api_key = f.readline()
 f.close()
 
-def get_bounding_box(city_name):
+def get_bounding_box(city_name, zone):
     base_url = 'https://maps.googleapis.com/maps/api/geocode/json'
     
     # Construct the request URL
@@ -34,6 +34,8 @@ def get_bounding_box(city_name):
             bounding_box = [sw['lng'], sw['lat'], ne['lng'], ne['lat']]
             log = []
             log.append(city_name)
+            log.append(zone)
+            log.append(f"{sw['lng']},{sw['lat']},{ne['lng']},{ne['lat']}")
             log.append(f'var geometry = ee.Geometry.Rectangle({bounding_box});')
             log.append(f'ee.Geometry.Rectangle({bounding_box})')
             return log
@@ -46,11 +48,11 @@ def get_bounding_box(city_name):
 
 tropical_cities = [
     'Singapore, Singapore',
-    'Medellin, Colombia',
+    'Jakarta, Indonesia',
     'Santo Domingo, Dominican Republic',
     'Jayapura, Indonesia',
     'Kinshasa, DRC',
-    'Vientiane, Laos',
+    'Bangkok, Thailand',
     'Belmopan, Belize',
     'Port Louis, Mauritius',
     'Miami, United States',
@@ -64,11 +66,11 @@ tropical_cities = [
 
 arid_cities = [
     'Tucson, United States',
-    'Cairo, Egypt',
+    'Baghdad, Iraq',
     'Alice Springs, Australia',
     'Dubai, United Arab Emirates',  # custom
     'San Pedro de Atacama, Chile',
-    'Yinchuan, China',
+    'Ashgabat, Turkmenistan',
     'Isfahan, Iran',
     'Madrid, Spain',
     'Denver, United States',
@@ -91,7 +93,7 @@ temperate_cities = [
     'Munich, Germany',
     'Paris, France',
     'Ljubljana, Slovenia',
-    'Guangzhou, China',
+    'Phonsavan, Laos',
     'Lusaka, Zambia',
     'Salta, Argentina',
     'Shimla, India',
@@ -102,7 +104,7 @@ continental_cities = [
     'Chicago, United States',
     'Kiev, Ukraine',
     'Minneapolis, United States',
-    'Beijing, China',
+    'Khabarovsk, Russia',
     'Harbin, China',
     'Arak, Iran',
     'Bishkek, Kyrgyzstan',
@@ -122,28 +124,28 @@ polar_cities = [
     'Anchorage, USA',
     'Murmansk, Russia',
     'Fairbanks, USA',
+    'Kiruna, Sweden',
     'Yellowknife, Canada',
-    'Iqaluit, Canada',
-    'Qaanaaq, Greenland',
     'Tasiilaq, Greenland',
     'Norilsk, Russia',  # custom
     'Upernavik, Greenland',
     'Yakutsk, Russia',
-    'Hammerfest',
-    'Tiksi, Russia',
-    'Churchill, Canada'
+    'Hammerfest, Norway',
+    'Akureyri, Iceland',
+    'Iqaluit, Canada',
+    'Dawson City, Canada'
 ]
 
-res = pd.DataFrame(columns=['city', 'bbox_js', 'bbox_py'])
+res = pd.DataFrame(columns=['city', 'zone', 'bbox_coords', 'bbox_js', 'bbox_py'])
 
-zones = [tropical_cities,arid_cities,temperate_cities,continental_cities,polar_cities]
-climate = ['tropical', 'arid', 'temperate', 'continental', 'polar']
+groups = [tropical_cities,arid_cities,temperate_cities,continental_cities,polar_cities]
+climate = ['a', 'b', 'c', 'd', 'e']
 count = 0
-for zone in zones:
-    res.loc[len(res)] = [climate[count], '', '']
+for cities in groups:
+    zone = climate[count]
     count += 1
-    for city in zone: 
-        bounding_box = get_bounding_box(city)
+    for city in cities: 
+        bounding_box = get_bounding_box(city, zone)
         res.loc[len(res)] = bounding_box
     
 res.to_csv('D:/Msc/Thesis/Data/GEEDownload/cityBbox.csv')
@@ -164,4 +166,15 @@ df.to_csv('D:/Msc/Thesis/Data/GEEDownload/updated_thresholds.csv', index=False)
 
 # In[get bounding box of a single city]
 
-print(get_bounding_box('Dawson City'))
+print(get_bounding_box('Dawson City, Canada', 'e'))
+
+# In[]
+
+df = pd.read_csv("D:/Msc/Thesis/Data/GEEDownload/cityWithParkCounts2.csv")
+cities = df[(df['geometry'].isna()) & ~(df['Index'].isna())]['city']
+
+for city in cities:
+    print(city)
+    df.loc[df['city'] == city, 'geometry'] = get_bounding_box(city)[2]
+
+df.to_csv("D:/Msc/Thesis/Data/GEEDownload/cityWithParkCounts2.csv")

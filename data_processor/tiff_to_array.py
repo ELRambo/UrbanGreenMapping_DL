@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import rasterio
 
-os.chdir('D:/Msc/Thesis/Data/GEEDownload')
+os.chdir('D:/Msc/Thesis/Data/Relabelled')
 
 def readTiff(file_path):
     with rasterio.open(file_path, 'r') as src:
@@ -20,7 +20,7 @@ def readTiff(file_path):
 def normalize(x):
     return 255 * (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
 
-def gen_data(zone, file_path, city, isEval, nChannels=6):
+def genData(zone, file_path, city, isEval, nChannels=6):
     
     arr = readTiff(file_path)
     _, rows, cols = arr.shape
@@ -62,9 +62,10 @@ def gen_data(zone, file_path, city, isEval, nChannels=6):
     # slice img for training
     if isEval != 1:       
         
-        # No overlap for train data
+        # No overlap for train data except a, e
         if zone not in ['a', 'e']:
             step_size = sample_size
+            
         dataset_train_list = []
         
         num_tiles_rows = (data_output.shape[0] - sample_size) // step_size + 1
@@ -88,6 +89,7 @@ def gen_data(zone, file_path, city, isEval, nChannels=6):
     # slice img for eval
     else:
         
+        # No overlap for eval data in c, d
         if zone in ['c', 'd']:
             step_size = sample_size
         
@@ -115,9 +117,9 @@ def gen_data(zone, file_path, city, isEval, nChannels=6):
 if __name__ == '__main__':
     
     nChannels = 6
-    zone = 'a'
+    zone = 'e'
     
-    df = pd.read_csv('newThresh.csv')
+    df = pd.read_csv('D:/Msc/Thesis/Data/GEEDownload/newThresh.csv')
     df = df[(df['zone'] == zone)]
     
     train_size = 0; eval_size = 0
@@ -129,11 +131,11 @@ if __name__ == '__main__':
         print(city)
         
         file = city + '.tif'
-        file_path = os.path.join('E:/Thesis', zone, file)
+        file_path = os.path.join('F:/Msc/Thesis/Data/Relabelled', zone, file)
         
         if isEval != 1:
-            train_size += gen_data(zone, file_path, city, isEval, nChannels)
+            train_size += genData(zone, file_path, city, isEval, nChannels)
         else:
-            eval_size += gen_data(zone, file_path, city, isEval, nChannels)
+            eval_size += genData(zone, file_path, city, isEval, nChannels)
         
     print(f'Train size: {train_size}, eval size: {eval_size}')

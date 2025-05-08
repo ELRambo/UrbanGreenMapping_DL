@@ -110,9 +110,10 @@ if __name__ == '__main__':
     ee.Initialize()
     print('ee initialised')
     
-    df = pd.read_csv('D:/Msc/Thesis/Data/GEEDownload/newThresh.csv')
-    zone = 'b'
-    df = df[(df['zone'] == zone) & (df['exception'] == 2)]
+    df = pd.read_csv('D:/Msc/Thesis/Data/GEEDownload/cityWithParkCounts2.csv')
+    zone = 'parkCities'
+    # df = df[(df['zone'] == zone)]
+    df = df[(df['zone'] == 'A') | (df['zone'] == 'B')]
     scale = 10
     
     # Loop through each city
@@ -120,7 +121,7 @@ if __name__ == '__main__':
         description = row['city']
         country = row['country']
         geometry = eval(row['geometry'])
-        thresh = row['threshold']
+        # thresh = row['threshold']
                 
         dataset = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
             .filterDate('2019-01-01', '2020-12-31') \
@@ -137,20 +138,21 @@ if __name__ == '__main__':
             
         spectralBands = sharpened.select(['B4', 'B3', 'B2', 'B8', 'B12'])
         
-        ndvi = getNDVI(dataset).rename('NDVI')
-        ndviLabel = ndvi.gt(thresh).rename('NDVI_Label')
+        # ndvi = getNDVI(dataset).rename('NDVI')
+        # ndviLabel = ndvi.gt(thresh).rename('NDVI_Label')
         
-        # Mask buildings in each tile
-        grid = splitRec(geometry)
-        tiles = 4
-        for i in range(tiles):
-            feature = ee.Feature(grid.toList(1, i).get(0))
-            tile_geometry = feature.geometry().bounds()
-            buildingMask = maskBuildings(country, tile_geometry).clip(geometry)
-            ndviLabel = ndviLabel.updateMask(buildingMask)
+        # # Mask buildings in each tile
+        # grid = splitRec(geometry)
+        # tiles = 4
+        # for i in range(tiles):
+        #     feature = ee.Feature(grid.toList(1, i).get(0))
+        #     tile_geometry = feature.geometry().bounds()
+        #     buildingMask = maskBuildings(country, tile_geometry).clip(geometry)
+        #     ndviLabel = ndviLabel.updateMask(buildingMask)
         
-        ndviLabel =   ndviLabel.unmask(0).clip(geometry)
-        image = spectralBands.addBands(ndviLabel.toFloat())
+        # ndviLabel =   ndviLabel.unmask(0).clip(geometry)
+        # image = spectralBands.addBands(ndviLabel.toFloat())
+        image = spectralBands
             
         task = ee.batch.Export.image.toDrive(
             image=image,

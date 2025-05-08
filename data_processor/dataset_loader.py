@@ -25,8 +25,8 @@ class GeospatialDatasetTorch(Dataset):
         '''
         self.data = torch.FloatTensor(data)
         
-        # Separate features (bands 0-4) from labels (band 5)
-        self.features = self.data[..., :4]
+        # Separate features (bands 0-5) from labels (band 6)
+        self.features = self.data[..., :5]
         self.labels = self.data[..., 5]
         self.is_training = is_training
         
@@ -38,23 +38,39 @@ class GeospatialDatasetTorch(Dataset):
         features = self.features[idx].permute(2, 0, 1)  # (C, H, W)
         label = self.labels[idx]  # (H, W)
         
+        label_mapping = {
+            0: 0,     # Ignore
+            1: 0,     # Green
+            2: 1,    # Trees
+            3: 2,    # Shrubs
+            4: 3,    # Grass
+        }
+        label = label.to(torch.int64)
+        label_remapped = torch.zeros_like(label)
+        for k, v in label_mapping.items():
+            label_remapped[label == k]= v
+        
         # Data augmentation
         if self.is_training:
             if random.random() < 0.5:
                 features = TF.hflip(features)
-                label = TF.hflip(label)
+                label_remapped = TF.hflip(label_remapped)
             
             if random.random() < 0.5:
                 features = TF.vflip(features)
-                label = TF.vflip(label)
+                label_remapped = TF.vflip(label_remapped)
                 
             angle = random.choice([0, 90, 180, 270])
             if angle != 0:
                 features = TF.rotate(features, angle)
-                label = TF.rotate(label.unsqueeze(0), angle).squeeze(0)
-            
-        return features, label
-    
+                label_remapped = TF.rotate(
+                    label_remapped.unsqueeze(0), 
+                    angle, 
+                    interpolation=TF.InterpolationMode.NEAREST
+                ).squeeze(0).long() 
+        
+        return features, label_remapped
+        
     def calculate_green_percentages(self):
         """
         Calculate the percentage of positive (green) pixels in the entire dataset.
@@ -96,7 +112,29 @@ class GeospatialDataLoader:
         self.memmap_file = memmap_file
         self.dataset_type = dataset_type
         self.combined_dataset = None
+    
+    def __len__(self):
         
+        '''Return the number of samples in the dataset'''
+        
+        if self.combined_dataset is None:
+            self.load_datasets()
+        return self.combined_dataset.shape[0] 
+    
+    def __getitem__(self, idx):
+        
+        if self.combined_dataset is None:
+            self.load_datasets()
+            
+        # Get a single sample from the dataset
+        sample = self.combined_dataset[idx].reshape(self.required_shape)
+        sample_tensor = torch.from_numpy(sample).float()  
+        
+        feature = sample_tensor[..., :5].permute(2, 0, 1)
+        label = sample_tensor[..., 5]
+        
+        return feature, label
+    
     def load_datasets(self, verbose=True):
         
         '''Load and concatenate all valid datasets'''
@@ -156,7 +194,7 @@ class GeospatialDataLoader:
                 self.memmap_file = 'memmap_eval.memmap'
             
             self.combined_dataset = np.memmap(self.memmap_file, dtype=dtype, 
-                                              mode='w+', shape=combined_shape)
+                                              mode='r+', shape=combined_shape)
             offset = 0
             for dataset in valid_datasets:
                 # Calculate the size of each dataset and copy it to the memory-mapped file
