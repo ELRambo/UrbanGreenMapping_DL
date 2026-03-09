@@ -1,4 +1,6 @@
-# Master thesis project Urban Green Infrastructure Mapping with Satellite Remote  Sensing and Deep Learning
+# Master Thesis Project Urban Green Infrastructure Mapping with Satellite Remote  Sensing and Deep Learning
+
+Available via: http://urn.kb.se/resolve?urn=urn:nbn:se:kth:diva-373496
 
  Residual Channel Attention Module
  <img width="941" height="419" alt="image" src="https://github.com/user-attachments/assets/e44938cc-53bf-4b15-94cd-8d4b9260fa72" />
